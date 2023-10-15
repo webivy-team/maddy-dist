@@ -1,0 +1,412 @@
+name: Build, Test & Publish
+
+on:
+  push:
+    branches:
+      - 'master'
+      - 'main'
+
+permissions: write-all
+
+env:
+  MADDY_VERSION: 0.7.0
+  MADDY_DIST_VERSION: 2
+
+jobs:
+  build-win32-x64:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '^1.21.0'
+      - name: Create archives
+        shell: bash
+        run: |
+          git clone https://github.com/foxcpp/maddy.git --depth 1 --branch v$MADDY_VERSION
+          (cd maddy && ./build.sh)
+          ls -lah maddy/build
+      - name: Upload bundle
+        uses: actions/upload-artifact@v3
+        with:
+          path: maddy/build/maddy
+          name: win32-x64
+          if-no-files-found: error
+  build-darwin-x64:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '^1.21.0'
+      - name: Create archives
+        run: |
+          brew install tree
+          export PATH="/opt/homebrew/opt/make/libexec/gnubin:$PATH"
+          git clone https://github.com/foxcpp/maddy.git --depth 1 --branch v$MADDY_VERSION
+          (cd maddy && ./build.sh)
+          tree
+      - name: Upload bundle
+        uses: actions/upload-artifact@v3
+        with:
+          path: maddy/build/maddy
+          name: darwin-x64
+          if-no-files-found: error
+  build-darwin-arm64:
+    runs-on: macos-latest-xlarge
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '^1.21.0'
+      - name: Create archives
+        run: |
+          brew install tree
+          export PATH="/opt/homebrew/opt/make/libexec/gnubin:$PATH"
+          git clone https://github.com/foxcpp/maddy.git --depth 1 --branch v$MADDY_VERSION
+          (cd maddy && ./build.sh)
+          tree
+      - name: Upload bundle
+        uses: actions/upload-artifact@v3
+        with:
+          path: maddy/build/maddy
+          name: darwin-arm64
+          if-no-files-found: error
+  build-linux-x64:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '^1.21.0'
+      - name: Create archives
+        run: |
+          sudo apt install -q -y gcc libc6-dev make
+          git clone https://github.com/foxcpp/maddy.git --depth 1 --branch v$MADDY_VERSION
+          (cd maddy && ./build.sh)
+          tree
+      - name: Upload bundle
+        uses: actions/upload-artifact@v3
+        with:
+          path: maddy/build/maddy
+          name: linux-x64
+          if-no-files-found: error
+  build-linux-arm64:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create archives
+        uses: uraimo/run-on-arch-action@v2
+        with:
+          arch: aarch64
+          distro: ubuntu22.04
+          env: |
+            MADDY_VERSION: "${{ env.MADDY_VERSION }}"
+            MADDY_DIST_VERSION: "${{ env.MADDY_DIST_VERSION }}"
+          setup: |
+            mkdir -p "${PWD}/artifacts"
+          dockerRunArgs: |
+            --volume "${PWD}/artifacts:/usr/local/maddy-dist"
+          run: |
+            apt update -q -y
+            apt install -q -y golang gcc libc6-dev make git tree
+            git clone https://github.com/foxcpp/maddy.git --depth 1 --branch v$MADDY_VERSION
+            (cd maddy && ./build.sh)
+            tree
+            mv ./maddy/build/maddy /usr/local/maddy-dist/maddy
+      - name: Upload bundle
+        uses: actions/upload-artifact@v3
+        with:
+          path: artifacts/maddy
+          name: linux-arm64
+          if-no-files-found: error
+
+  package:
+    needs:
+      - build-win32-x64
+      - build-darwin-x64
+      - build-darwin-arm64
+      - build-linux-x64
+      - build-linux-arm64
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout master branch
+        uses: actions/checkout@v3
+
+      - name: Download workflow run artifacts
+        uses: actions/download-artifact@v3
+
+      - name: List all files
+        run: tree
+
+      - name: move files
+        run: |
+          mv darwin-arm64/maddy npm/darwin-arm64/maddy
+          mv darwin-x64/maddy npm/darwin-x64/maddy
+          mv linux-arm64/maddy npm/linux-arm64/maddy
+          mv linux-x64/maddy npm/linux-x64/maddy
+          mv win32-x64/maddy npm/win32-x64/maddy.exe
+          chmod +x ./npm/*/maddy
+
+      - name: Pack packages
+        working-directory: master
+        run: |
+          (cd ./npm/maddy-dist && npm run release-prep && npm pack)
+          (cd ./npm/linux-arm64 && npm pack)
+          (cd ./npm/linux-x64 && npm pack)
+          (cd ./npm/darwin-arm64 && npm pack)
+          (cd ./npm/darwin-x64 && npm pack)
+          (cd ./npm/win32-x64 && npm pack)
+
+      - name: Upload bundle darwin-arm64
+        uses: actions/upload-artifact@v3
+        with:
+          path: master/npm/darwin-arm64/maddy-dist-darwin-arm64-*.tgz
+          name: maddy-dist-darwin-arm64.tgz
+          if-no-files-found: error
+      - name: Upload bundle darwin-x64
+        uses: actions/upload-artifact@v3
+        with:
+          path: master/npm/darwin-x64/maddy-dist-darwin-x64-*.tgz
+          name: maddy-dist-darwin-x64.tgz
+          if-no-files-found: error
+      - name: Upload bundle win32-x64
+        uses: actions/upload-artifact@v3
+        with:
+          path: master/npm/win32-x64/maddy-dist-win32-x64-*.tgz
+          name: maddy-dist-win32-x64.tgz
+          if-no-files-found: error
+      - name: Upload bundle linux-x64
+        uses: actions/upload-artifact@v3
+        with:
+          path: master/npm/linux-x64/maddy-dist-linux-x64-*.tgz
+          name: maddy-dist-linux-x64.tgz
+          if-no-files-found: error
+      - name: Upload bundle linux-arm64
+        uses: actions/upload-artifact@v3
+        with:
+          path: master/npm/linux-arm64/maddy-dist-linux-arm64-*.tgz
+          name: maddy-dist-linux-arm64.tgz
+          if-no-files-found: error
+      - name: Upload bundle maddy-dist
+        uses: actions/upload-artifact@v3
+        with:
+          path: master/npm/maddy-dist/maddy-dist-*.tgz
+          name: maddy-dist.tgz
+          if-no-files-found: error
+
+  test-linux-x64:
+    runs-on: ubuntu-latest
+    needs:
+      - package
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+      - uses: actions/download-artifact@v3
+        with:
+          name: maddy-dist.tgz
+      - uses: actions/download-artifact@v3
+        with:
+          name: maddy-dist-linux-x64.tgz
+      - name: Run NPM Test
+        working-directory: ./tests
+        run: |
+          npm i ../maddy-dist-*.tgz && npm test
+
+  test-linux-arm64:
+    runs-on: ubuntu-latest
+    needs:
+      - package
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with:
+          name: maddy-dist.tgz
+      - uses: actions/download-artifact@v3
+        with:
+          name: maddy-dist-linux-arm64.tgz
+      - name: Run testing
+        uses: uraimo/run-on-arch-action@v2
+        with:
+          arch: aarch64
+          distro: ubuntu22.04
+          run: |
+            apt update -q -y
+            apt install -q -y curl bash sudo
+            useradd -m otheruser
+            cp ./maddy-dist-*.tgz tests/
+            chmod -R 777 tests
+            sudo -u otheruser bash -c 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash'
+            sudo -u otheruser bash -c '. ~/.profile && nvm install v20 && (cd tests && npm i ./maddy-dist-*.tgz && npm test)'
+
+  test-darwin-x64:
+    runs-on: macos-latest
+    needs:
+      - package
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+      - uses: actions/download-artifact@v3
+        with:
+          name: maddy-dist.tgz
+      - uses: actions/download-artifact@v3
+        with:
+          name: maddy-dist-darwin-x64.tgz
+      - name: Run NPM Test
+        working-directory: ./tests
+        run: |
+          npm i ../maddy-dist-*.tgz && npm test
+
+  test-win32-x64:
+    runs-on: windows-latest
+    needs:
+      - package
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+      - uses: actions/download-artifact@v3
+        with:
+          name: maddy-dist.tgz
+      - uses: actions/download-artifact@v3
+        with:
+          name: maddy-dist-win32-x64.tgz
+      - name: Run NPM Test
+        working-directory: ./tests
+        shell: bash
+        run: |
+          npm i ../maddy-dist-*.tgz && npm test
+
+  test-darwin-arm64:
+    runs-on: macos-latest-xlarge
+    needs:
+      - package
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+      - uses: actions/download-artifact@v3
+        with:
+          name: maddy-dist.tgz
+      - uses: actions/download-artifact@v3
+        with:
+          name: maddy-dist-darwin-arm64.tgz
+      - name: Run NPM Test
+        working-directory: ./tests
+        run: |
+          npm i ../maddy-dist-*.tgz && npm test
+
+  publish:
+    runs-on: ubuntu-latest
+    needs:
+      - test-linux-x64
+      - test-linux-arm64
+      - test-darwin-x64
+      - test-win32-x64
+      - test-darwin-arm64
+    steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
+      - uses: actions/download-artifact@v3
+        with:
+          name: maddy-dist.tgz
+      - uses: actions/download-artifact@v3
+        with:
+          name: maddy-dist-linux-x64.tgz
+      - uses: actions/download-artifact@v3
+        with:
+          name: maddy-dist-linux-arm64.tgz
+      - uses: actions/download-artifact@v3
+        with:
+          name: maddy-dist-darwin-x64.tgz
+      - uses: actions/download-artifact@v3
+        with:
+          name: maddy-dist-win32-x64.tgz
+      - uses: actions/download-artifact@v3
+        with:
+          name: maddy-dist-darwin-arm64.tgz
+      - name: Run NPM Publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          npm publish maddy-dist-v*.tgz
+          npm publish maddy-dist-linux-x64-v*.tgz
+          npm publish maddy-dist-linux-arm64-v*.tgz
+          npm publish maddy-dist-darwin-x64-v*.tgz
+          npm publish maddy-dist-win32-x64-v*.tgz
+          npm publish maddy-dist-darwin-arm64-v*.tgz
+
+  push:
+    needs:
+      - test-linux-x64
+      - test-linux-arm64
+      - test-darwin-x64
+      - test-win32-x64
+      - test-darwin-arm64
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout master branch
+        uses: actions/checkout@v3
+
+      - name: Download and unpack all workflow run artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Download workflow run artifacts
+        uses: actions/download-artifact@v3
+
+      - name: List all files
+        run: tree
+
+      - name: move files
+        run: |
+          mv darwin-arm64/maddy npm/darwin-arm64/maddy
+          mv darwin-x64/maddy npm/darwin-x64/maddy
+          mv linux-arm64/maddy npm/linux-arm64/maddy
+          mv linux-x64/maddy npm/linux-x64/maddy
+          mv win32-x64/maddy npm/win32-x64/maddy.exe
+          chmod +x ./npm/*/maddy
+
+      - name: Pack packages
+        run: |
+          (cd ./npm/maddy-dist && npm run release-prep && npm pack)
+          (cd ./npm/linux-arm64 && npm pack)
+          (cd ./npm/linux-x64 && npm pack)
+          (cd ./npm/darwin-arm64 && npm pack)
+          (cd ./npm/darwin-x64 && npm pack)
+          (cd ./npm/win32-x64 && npm pack)
+
+      - name: Check if there are any changes
+        id: has_changes
+        run: |
+          git status || exit 1
+          test -n "$(git status --porcelain)" && result=yes || result=no
+          echo "result=$result" >> $GITHUB_OUTPUT
+
+      - name: Commit changes
+        if: steps.has_changes.outputs.result == 'yes'
+        run: |
+          git config --local user.email "github-actions@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add --all
+          git commit -m "Autobuild: Built from ${{ github.sha }}"
+
+      - name: Push changes back to origin
+        if: steps.has_changes.outputs.result == 'yes'
+        run: |
+          # XXX: workaround for https://github.com/orgs/community/discussions/55820
+          git config --global http.version HTTP/1.1
+          git pull -r
+          git push https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git master
