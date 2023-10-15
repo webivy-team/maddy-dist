@@ -149,7 +149,6 @@ jobs:
           chmod +x ./npm/*/maddy
 
       - name: Pack packages
-        working-directory: master
         run: |
           (cd ./npm/maddy-dist && npm run release-prep && npm pack)
           (cd ./npm/linux-arm64 && npm pack)
@@ -161,37 +160,37 @@ jobs:
       - name: Upload bundle darwin-arm64
         uses: actions/upload-artifact@v3
         with:
-          path: master/npm/darwin-arm64/maddy-dist-darwin-arm64-*.tgz
+          path: npm/darwin-arm64/maddy-dist-darwin-arm64-*.tgz
           name: maddy-dist-darwin-arm64.tgz
           if-no-files-found: error
       - name: Upload bundle darwin-x64
         uses: actions/upload-artifact@v3
         with:
-          path: master/npm/darwin-x64/maddy-dist-darwin-x64-*.tgz
+          path: npm/darwin-x64/maddy-dist-darwin-x64-*.tgz
           name: maddy-dist-darwin-x64.tgz
           if-no-files-found: error
       - name: Upload bundle win32-x64
         uses: actions/upload-artifact@v3
         with:
-          path: master/npm/win32-x64/maddy-dist-win32-x64-*.tgz
+          path: npm/win32-x64/maddy-dist-win32-x64-*.tgz
           name: maddy-dist-win32-x64.tgz
           if-no-files-found: error
       - name: Upload bundle linux-x64
         uses: actions/upload-artifact@v3
         with:
-          path: master/npm/linux-x64/maddy-dist-linux-x64-*.tgz
+          path: npm/linux-x64/maddy-dist-linux-x64-*.tgz
           name: maddy-dist-linux-x64.tgz
           if-no-files-found: error
       - name: Upload bundle linux-arm64
         uses: actions/upload-artifact@v3
         with:
-          path: master/npm/linux-arm64/maddy-dist-linux-arm64-*.tgz
+          path: npm/linux-arm64/maddy-dist-linux-arm64-*.tgz
           name: maddy-dist-linux-arm64.tgz
           if-no-files-found: error
       - name: Upload bundle maddy-dist
         uses: actions/upload-artifact@v3
         with:
-          path: master/npm/maddy-dist/maddy-dist-*.tgz
+          path: npm/maddy-dist/maddy-dist-*.tgz
           name: maddy-dist.tgz
           if-no-files-found: error
 
