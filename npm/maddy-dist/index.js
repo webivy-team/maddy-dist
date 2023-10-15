@@ -16,12 +16,10 @@ export default async (env = {}) => {
   const proc = await new Promise((pResolve, reject) => {
     const proc = spawn(
       binPath,
-      [
-        `--config ${process.cwd()}/maddy.conf`,
-        'run'
-      ],
+      ['run'],
       {
         env: {
+          MADDY_CONFIG: resolve(process.cwd(), 'maddy.conf'),
           CURRENT_DIR: process.cwd(),
           ...process.env,
           ...env,
