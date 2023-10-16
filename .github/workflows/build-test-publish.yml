@@ -10,7 +10,7 @@ permissions: write-all
 
 env:
   MADDY_VERSION: 0.7.0
-  MADDY_DIST_VERSION: 2
+  MADDY_DIST_VERSION: 3
 
 jobs:
   build-win32-x64:
