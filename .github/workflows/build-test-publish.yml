@@ -10,7 +10,7 @@ permissions: write-all
 
 env:
   MADDY_VERSION: 0.7.1 # https://github.com/foxcpp/maddy/releases
-  MADDY_DIST_VERSION: 3
+  MADDY_DIST_VERSION: 4
 
 jobs:
   build-win32-x64:
@@ -347,8 +347,8 @@ jobs:
           npm publish maddy-dist-linux-x64-v*.tgz
           npm publish maddy-dist-linux-arm64-v*.tgz
           npm publish maddy-dist-darwin-x64-v*.tgz
-          npm publish maddy-dist-win32-x64-v*.tgz
           npm publish maddy-dist-darwin-arm64-v*.tgz
+          # npm publish maddy-dist-win32-x64-v*.tgz
 
   push:
     needs:
