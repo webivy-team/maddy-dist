@@ -17,7 +17,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: '^1.21.0'
       - name: Create archives
@@ -27,7 +27,7 @@ jobs:
           (cd maddy && ./build.sh)
           ls -lah maddy/build
       - name: Upload bundle
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           path: maddy/build/maddy
           name: win32-x64
@@ -36,7 +36,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: '^1.21.0'
       - name: Create archives
@@ -47,7 +47,7 @@ jobs:
           (cd maddy && ./build.sh)
           tree
       - name: Upload bundle
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           path: maddy/build/maddy
           name: darwin-x64
@@ -56,7 +56,7 @@ jobs:
     runs-on: macos-latest-xlarge
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: '^1.21.0'
       - name: Create archives
@@ -67,7 +67,7 @@ jobs:
           (cd maddy && ./build.sh)
           tree
       - name: Upload bundle
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           path: maddy/build/maddy
           name: darwin-arm64
@@ -76,7 +76,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: '^1.21.0'
       - name: Create archives
@@ -86,7 +86,7 @@ jobs:
           (cd maddy && ./build.sh)
           tree
       - name: Upload bundle
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           path: maddy/build/maddy
           name: linux-x64
@@ -109,13 +109,14 @@ jobs:
             --volume "${PWD}/artifacts:/usr/local/maddy-dist"
           run: |
             apt update -q -y
-            apt install -q -y golang gcc libc6-dev make git tree
+            apt install -q -y golang-1.21 gcc libc6-dev make git tree
+            export PATH="/usr/lib/go-1.21/bin:$PATH"
             git clone https://github.com/foxcpp/maddy.git --depth 1 --branch v$MADDY_VERSION
             (cd maddy && ./build.sh)
             tree
             mv ./maddy/build/maddy /usr/local/maddy-dist/maddy
       - name: Upload bundle
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           path: artifacts/maddy
           name: linux-arm64
@@ -131,10 +132,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout master branch
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Download workflow run artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
 
       - name: List all files
         run: tree
@@ -158,37 +159,37 @@ jobs:
           (cd ./npm/win32-x64 && npm pack)
 
       - name: Upload bundle darwin-arm64
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           path: npm/darwin-arm64/maddy-dist-darwin-arm64-*.tgz
           name: maddy-dist-darwin-arm64.tgz
           if-no-files-found: error
       - name: Upload bundle darwin-x64
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           path: npm/darwin-x64/maddy-dist-darwin-x64-*.tgz
           name: maddy-dist-darwin-x64.tgz
           if-no-files-found: error
       - name: Upload bundle win32-x64
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           path: npm/win32-x64/maddy-dist-win32-x64-*.tgz
           name: maddy-dist-win32-x64.tgz
           if-no-files-found: error
       - name: Upload bundle linux-x64
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           path: npm/linux-x64/maddy-dist-linux-x64-*.tgz
           name: maddy-dist-linux-x64.tgz
           if-no-files-found: error
       - name: Upload bundle linux-arm64
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           path: npm/linux-arm64/maddy-dist-linux-arm64-*.tgz
           name: maddy-dist-linux-arm64.tgz
           if-no-files-found: error
       - name: Upload bundle maddy-dist
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           path: npm/maddy-dist/maddy-dist-*.tgz
           name: maddy-dist.tgz
@@ -199,15 +200,15 @@ jobs:
     needs:
       - package
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 20
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: maddy-dist.tgz
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: maddy-dist-linux-x64.tgz
       - name: Run NPM Test
@@ -220,11 +221,11 @@ jobs:
     needs:
       - package
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/download-artifact@v3
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
         with:
           name: maddy-dist.tgz
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: maddy-dist-linux-arm64.tgz
       - name: Run testing
@@ -246,15 +247,15 @@ jobs:
     needs:
       - package
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 20
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: maddy-dist.tgz
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: maddy-dist-darwin-x64.tgz
       - name: Run NPM Test
@@ -268,15 +269,15 @@ jobs:
   #   needs:
   #     - package
   #   steps:
-  #     - uses: actions/checkout@v3
+  #     - uses: actions/checkout@v4
   #     - name: Setup Node.js
-  #       uses: actions/setup-node@v3
+  #       uses: actions/setup-node@v4
   #       with:
   #         node-version: 20
-  #     - uses: actions/download-artifact@v3
+  #     - uses: actions/download-artifact@v4
   #       with:
   #         name: maddy-dist.tgz
-  #     - uses: actions/download-artifact@v3
+  #     - uses: actions/download-artifact@v4
   #       with:
   #         name: maddy-dist-win32-x64.tgz
   #     - name: Run NPM Test
@@ -290,15 +291,15 @@ jobs:
     needs:
       - package
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 20
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: maddy-dist.tgz
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: maddy-dist-darwin-arm64.tgz
       - name: Run NPM Test
@@ -316,26 +317,26 @@ jobs:
       - test-darwin-arm64
     steps:
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           registry-url: 'https://registry.npmjs.org'
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: maddy-dist.tgz
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: maddy-dist-linux-x64.tgz
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: maddy-dist-linux-arm64.tgz
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: maddy-dist-darwin-x64.tgz
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: maddy-dist-win32-x64.tgz
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: maddy-dist-darwin-arm64.tgz
       - name: Run NPM Publish
@@ -359,13 +360,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout master branch
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Download and unpack all workflow run artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
 
       - name: Download workflow run artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
 
       - name: List all files
         run: tree
