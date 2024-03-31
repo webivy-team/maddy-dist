@@ -12,7 +12,7 @@ const binPath = resolve(
   /^win/.test(process.platform) ? "maddy.exe" : "maddy",
 );
 
-export const maddyCmd = (...args) => {
+export const maddyCmd = (env, ...args) => {
   const proc = spawnSync(
     binPath,
     args,
@@ -21,6 +21,7 @@ export const maddyCmd = (...args) => {
         MADDY_CONFIG: resolve(process.cwd(), 'maddy.conf'),
         CURRENT_DIR: process.cwd(),
         ...process.env,
+        ...env
       },
     }
   )
@@ -28,7 +29,7 @@ export const maddyCmd = (...args) => {
   console.error(proc.stderr.toString())
 }
 
-export const createUser = (email, password) => new Promise(async res => {
+export const createUser = (env, email, password) => new Promise(async res => {
   const proc = spawn(
     binPath,
     ['creds', 'create', email],
@@ -37,13 +38,10 @@ export const createUser = (email, password) => new Promise(async res => {
         MADDY_CONFIG: resolve(process.cwd(), 'maddy.conf'),
         CURRENT_DIR: process.cwd(),
         ...process.env,
+        ...env,
       },
     }
   )
-  // TODO: How to get when maddy is ready for input?
-  await new Promise(res => setTimeout(() => res(), 100))
-  proc.stdin.write(password)
-  proc.stdin.write("\n")
   proc.stdout.on('data', async (data) => {
     console.log(`stdout: "${data}"`);
   });
@@ -53,6 +51,10 @@ export const createUser = (email, password) => new Promise(async res => {
   proc.on("close", (code) => {
     res()
   });
+  // TODO: How to get when maddy is ready for input?
+  await new Promise(res => setTimeout(() => res(), 100))
+  proc.stdin.write(password)
+  proc.stdin.write("\n")
 })
 
 export default async (env = {}) => {

@@ -33,8 +33,8 @@ const getInbox = () => new Promise((res, rej) => {
 
 test("Server startup", async () => {
   const server = await maddy()
-  await createUser('postmaster@localhost', 'test')
-  maddyCmd('imap-acct', 'create', 'postmaster@localhost')
+  await createUser({}, 'postmaster@localhost', 'test')
+  maddyCmd({}, 'imap-acct', 'create', 'postmaster@localhost')
   const box = await getInbox()
   assert(box.name === 'INBOX')
   // Wait for imap to have ended its session to avoid a conn reset

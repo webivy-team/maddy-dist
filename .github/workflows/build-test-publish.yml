@@ -10,7 +10,7 @@ permissions: write-all
 
 env:
   MADDY_VERSION: 0.7.1 # https://github.com/foxcpp/maddy/releases
-  MADDY_DIST_VERSION: 4
+  MADDY_DIST_VERSION: 5
 
 jobs:
   build-win32-x64:
